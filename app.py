@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 import sqlite3, os, json
-app=Flask(__name__); app.secret_key="cafeteria-demo"
+app=Flask(__name__, template_folder=".", static_folder=".", static_url_path="/static"); app.secret_key="cafeteria-demo"
 DB=os.path.join(os.path.dirname(__file__),"database.db")
 
 def db():
