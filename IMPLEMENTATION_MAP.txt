@@ -1,0 +1,7 @@
+MENU -> templates/menu.html -> app.py /api/menu -> menu_items table
+CART -> static/app.js + templates/cart.html -> browser Local Storage until checkout
+CHECKOUT -> templates/checkout.html -> app.py /checkout -> users, orders, order_items, pickup_slots, payments
+TRACKING -> templates/tracking.html -> orders table
+HISTORY -> templates/history.html -> users + orders
+ADMIN -> templates/admin.html -> app.py admin routes -> menu_items + orders
+PERMANENT DATA -> database.db (SQLite) in project root
