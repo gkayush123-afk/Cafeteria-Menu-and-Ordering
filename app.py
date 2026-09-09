@@ -105,5 +105,7 @@ def api_order(o):
     c=db(); r=c.execute("SELECT order_id,status,total_amount,created_at FROM orders WHERE order_id=?",(o,)).fetchone(); c.close()
     return (jsonify(dict(r)),200) if r else (jsonify(error="Order not found"),404)
 
+init()
+
 if __name__=="__main__":
-    init(); app.run(host="127.0.0.1",port=5000,debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
