@@ -1,1 +1,103 @@
-{% extends "base.html" %}{% block content %}<h1>Order History</h1><form class="search"><input name="email" value="{{email}}" type="email" placeholder="Your email" required><button class="btn">Search</button></form>{% for o in orders %}<div class="row"><b>#{{o.order_id}}</b><span>{{o.status}} • {{o.slot_time}} • ₹{{o.total_amount}}</span></div>{% else %}<div class="card">Enter your email to see saved orders.</div>{% endfor %}{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<div class="card-header" style="margin-bottom: 24px;">
+  <div>
+    <h1>Past Order History</h1>
+    <p style="color: var(--text-muted); font-size: 15px;">Search your previous cafeteria pre-orders and download receipts.</p>
+  </div>
+  <a href="/menu" class="btn btn-accent">Order Fresh Food →</a>
+</div>
+
+<!-- EMAIL SEARCH FORM -->
+<div class="card" style="margin-bottom: 28px;">
+  <form method="get" action="/history" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 250px;">
+      <label style="font-size: 13px; font-weight: 600; color: var(--primary); display: block; margin-bottom: 4px;">Registered Email Address</label>
+      <input type="email" name="email" value="{{ email }}" placeholder="Enter your email to find orders..." required style="margin-top: 0;">
+    </div>
+    <button type="submit" class="btn btn-accent" style="height: 45px; margin-top: 20px;">
+      🔍 Search Orders
+    </button>
+  </form>
+</div>
+
+<!-- RESULTS LIST -->
+{% if orders %}
+  <div style="display: flex; flex-direction: column; gap: 18px;">
+    {% for entry in orders %}
+      {% set o = entry.order %}
+      {% set items = entry.order_items %}
+      <div class="card" style="margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <h3 style="font-size: 18px;">Order #{{ o.order_id }}</h3>
+              <span class="food-badge {% if o.status == 'Ready for Pickup' or o.status == 'Completed' %}special{% elif o.status == 'Cancelled' %}out{% endif %}" style="position: static;">
+                {{ o.status }}
+              </span>
+            </div>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">
+              Pickup Time: <b style="color: var(--primary);">{{ o.slot_time }}</b> • {{ o.created_at }}
+            </p>
+          </div>
+          
+          <div style="text-align: right;">
+            <div style="font-size: 20px; font-weight: 800; font-family: 'Outfit'; color: var(--primary);">
+              ₹{{ o.total_amount }}
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <a href="/tracking/{{ o.order_id }}" class="btn btn-outline btn-sm">Track Live</a>
+              <a href="/receipt/{{ o.order_id }}" target="_blank" class="btn btn-accent btn-sm">Receipt 📥</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ITEMS IN ORDER -->
+        <div style="font-size: 14px; color: var(--text-main);">
+          {% for i in items %}
+            <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+              <span>
+                <b>{{ i.quantity }}×</b> {{ i.name }}
+                {% if i.spice_level %}<span style="color: #ef4444; font-size: 12px;">({{ i.spice_level }})</span>{% endif %}
+                {% if i.addons_selected %}<span style="color: var(--accent); font-size: 12px;">+ {{ i.addons_selected }}</span>{% endif %}
+              </span>
+              <span style="color: var(--text-muted);">₹{{ i.subtotal }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% elif email %}
+  <div class="card" style="text-align: center; padding: 40px;">
+    <h3>No orders found for "{{ email }}"</h3>
+    <p style="color: var(--text-muted); margin: 10px 0 20px;">Make sure the email address matches the one used during checkout.</p>
+    <a href="/menu" class="btn btn-accent">Place Your First Order →</a>
+  </div>
+{% else %}
+  <div class="card" style="text-align: center; padding: 40px;">
+    <div style="font-size: 40px; margin-bottom: 10px;">📋</div>
+    <h3>Track Your Previous Orders</h3>
+    <p style="color: var(--text-muted); margin-top: 6px;">Enter your email address above to view all past meals and print tax invoices.</p>
+  </div>
+{% endif %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const emailInput = document.querySelector("input[name='email']");
+    const currentUrlParams = new URLSearchParams(window.location.search);
+    const emailInUrl = currentUrlParams.get("email");
+
+    if (emailInUrl) {
+      localStorage.setItem("cafe_user_email", emailInUrl);
+    } else {
+      const savedEmail = localStorage.getItem("cafe_user_email");
+      if (savedEmail && emailInput) {
+        emailInput.value = savedEmail;
+        // Automatically fetch orders if first time visiting without query
+        window.location.replace("/history?email=" + encodeURIComponent(savedEmail));
+      }
+    }
+  });
+</script>
+{% endblock %}

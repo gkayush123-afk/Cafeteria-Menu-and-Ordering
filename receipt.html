@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Receipt #{{ order.order_id }} — CaféGo</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body style="background: #f1f5f9; padding: 40px 20px;">
+
+  <div class="receipt-wrapper">
+    <!-- PRINT / ACTION BAR (HIDDEN DURING PRINT) -->
+    <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <a href="/tracking/{{ order.order_id }}" class="btn btn-outline btn-sm">← Back to Tracking</a>
+      <button onclick="window.print()" class="btn btn-accent btn-sm">🖨️ Print / Save as PDF</button>
+    </div>
+
+    <!-- RECEIPT HEADER -->
+    <div class="receipt-header">
+      <div>
+        <h2 style="font-size: 26px; color: var(--primary);">☕ CaféGo</h2>
+        <p style="color: var(--text-muted); font-size: 13px;">Campus Smart Cafeteria</p>
+        <p style="color: var(--text-muted); font-size: 13px;">GSTIN: 07ABCDE1234F1Z5</p>
+      </div>
+      <div style="text-align: right;">
+        <h3 style="font-size: 18px; color: var(--primary);">TAX INVOICE</h3>
+        <p style="font-size: 13px; font-weight: 700;">Order #{{ order.order_id }}</p>
+        <p style="color: var(--text-muted); font-size: 12px;">{{ order.payment_date or order.created_at }}</p>
+      </div>
+    </div>
+
+    <!-- CUSTOMER & PICKUP INFO -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; font-size: 13px;">
+      <div>
+        <p style="color: var(--text-muted); font-weight: 600;">CUSTOMER INFO</p>
+        <p><b>Name:</b> {{ order.name }}</p>
+        <p><b>Email:</b> {{ order.email }}</p>
+        {% if order.phone %}<p><b>Phone:</b> {{ order.phone }}</p>{% endif %}
+      </div>
+      <div style="text-align: right;">
+        <p style="color: var(--text-muted); font-weight: 600;">SCHEDULED PICKUP</p>
+        <p style="font-size: 16px; font-weight: 800; color: var(--accent);">{{ order.slot_time }}</p>
+        <p><b>Counter:</b> Fast-Track Express #2</p>
+      </div>
+    </div>
+
+    <!-- ITEMS TABLE -->
+    <table class="receipt-table">
+      <thead>
+        <tr>
+          <th>Item Description</th>
+          <th style="text-align: center;">Qty</th>
+          <th style="text-align: right;">Unit Price</th>
+          <th style="text-align: right;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in items %}
+          <tr>
+            <td>
+              <b>{{ i.name }}</b>
+              {% if i.spice_level %}<br><small style="color: #ef4444;">🌶️ {{ i.spice_level }}</small>{% endif %}
+              {% if i.addons_selected %}<br><small style="color: var(--accent);">+ {{ i.addons_selected }}</small>{% endif %}
+              {% if i.customization %}<br><small style="font-style: italic;">"{{ i.customization }}"</small>{% endif %}
+            </td>
+            <td style="text-align: center;">{{ i.quantity }}</td>
+            <td style="text-align: right;">₹{{ (i.unit_price + i.addon_price)|round(2) }}</td>
+            <td style="text-align: right; font-weight: 700;">₹{{ i.subtotal }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- TOTALS BREAKDOWN -->
+    <div style="width: 250px; margin-left: auto; font-size: 14px;">
+      <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+        <span>Items Subtotal:</span>
+        <b>₹{{ subtotal|round(2) }}</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+        <span>GST (5%):</span>
+        <b>₹{{ tax|round(2) }}</b>
+      </div>
+      <div style="display: flex; justify-content: space-between; padding: 8px 0; border-top: 2px solid var(--primary); font-size: 16px; font-weight: 800;">
+        <span>Grand Total:</span>
+        <span>₹{{ grand_total|round(2) }}</span>
+      </div>
+    </div>
+
+    <!-- PAYMENT & QR CODE -->
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-top: 24px;">
+      <div>
+        <p style="font-size: 13px; color: var(--text-muted);">Payment Method: <b>{{ order.method }}</b></p>
+        <p style="font-size: 13px; color: var(--text-muted);">Transaction ID: <span style="font-family: monospace;">{{ order.transaction_id }}</span></p>
+        <p style="font-size: 13px; color: var(--accent); font-weight: 700; margin-top: 4px;">✓ Status: PAID & VERIFIED</p>
+      </div>
+      <div style="text-align: center;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=CAFEGO-ORDER-{{ order.order_id }}" alt="Pickup QR" style="width: 75px; height: 75px; display: block; margin: 0 auto;">
+        <span style="font-size: 10px; color: var(--text-muted);">Scan at Counter</span>
+      </div>
+    </div>
+
+    <!-- RECEIPT FOOTER -->
+    <div class="receipt-footer">
+      <p>Thank you for choosing CaféGo! Enjoy your delicious meal.</p>
+      <p style="font-size: 11px; margin-top: 4px;">Computer-generated tax receipt. No signature required.</p>
+    </div>
+
+  </div>
+
+</body>
+</html>

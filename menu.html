@@ -1,1 +1,112 @@
-{% extends "base.html" %}{% block content %}<h1>Digital Menu</h1><div class="grid">{% for i in items %}<article><img src="{{i.image_url}}"><div class="pad"><small>{{i.category}}</small><h2>{{i.name}}</h2><p>{{i.description}}</p><small>{{i.ingredients}}</small><h2>₹{{i.price}}</h2>{% if i.available %}<input id="c{{i.item_id}}" placeholder="Customization (optional)"><button class="btn add" data-id="{{i.item_id}}" data-name="{{i.name}}" data-price="{{i.price}}">Add to Cart</button>{% else %}<b>Out of stock</b>{% endif %}</div></article>{% endfor %}</div>{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<div class="card-header" style="margin-bottom: 24px;">
+  <div>
+    <h1>Cafeteria Digital Menu</h1>
+    <p style="color: var(--text-muted); font-size: 15px;">Browse fresh meals, customize toppings & spice levels, and order ahead.</p>
+  </div>
+  <a href="/cart" class="btn btn-outline">View Cart 🛒</a>
+</div>
+
+<!-- CATEGORY FILTER & SEARCH CONTROLS -->
+<div class="menu-controls">
+  <div class="category-pills">
+    <a href="/menu?category=all" class="cat-pill {% if selected_category == 'all' or not selected_category %}active{% endif %}">All Items</a>
+    <a href="/menu?category=specials" class="cat-pill {% if selected_category == 'specials' %}active{% endif %}" style="border-color: #f59e0b; color: #d97706;">⭐ Daily Specials</a>
+    {% for cat in categories %}
+      <a href="/menu?category={{ cat }}" class="cat-pill {% if selected_category == cat %}active{% endif %}">{{ cat }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="search-box">
+    <span>🔍</span>
+    <input type="text" id="menuSearchInput" placeholder="Search dish, ingredients..." value="{{ search_query }}">
+  </div>
+</div>
+
+<!-- MENU ITEMS GRID -->
+<div class="menu-grid">
+  {% for i in items %}
+    <div class="food-card" id="dish-{{ i.item_id }}">
+      <div class="food-img-wrap">
+        <img src="{{ i.image_url }}" alt="{{ i.name }}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=700';">
+        {% if i.is_special %}
+          <span class="food-badge special">⭐ Daily Special</span>
+        {% endif %}
+        {% if not i.available %}
+          <span class="food-badge out">Out of Stock</span>
+        {% endif %}
+      </div>
+      <div class="food-body">
+        <div class="food-category">{{ i.category }}</div>
+        <div class="food-title">{{ i.name }}</div>
+        <div class="food-desc">{{ i.description }}</div>
+        <div class="food-ingredients"><b>Ingredients:</b> {{ i.ingredients }}</div>
+        
+        <div class="food-footer">
+          <div class="food-price">₹{{ i.price }}</div>
+          {% if i.available %}
+            <button class="btn btn-accent btn-sm" onclick='openCustomModal({
+              item_id: {{ i.item_id }},
+              name: {{ i.name|tojson }},
+              price: {{ i.price }},
+              description: {{ i.description|tojson }},
+              image_url: {{ i.image_url|tojson }},
+              options: {% if i.customization_options %}{{ i.customization_options|safe }}{% else %}{}{% endif %}
+            })'>
+              Customize & Add +
+            </button>
+          {% else %}
+            <span style="font-size: 13px; font-weight: 700; color: var(--accent-red); background: #fee2e2; padding: 6px 12px; border-radius: var(--radius-sm);">Sold Out</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+      <h3>No items found</h3>
+      <p style="color: var(--text-muted); margin: 10px 0 20px;">Try clearing your search query or selecting another category.</p>
+      <a href="/menu" class="btn btn-outline">Show All Menu Items</a>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- ITEM CUSTOMIZATION MODAL -->
+<div class="modal-backdrop" id="customModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeCustomModal()">✕</button>
+    <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 16px;">
+      <img id="modalImg" src="" alt="Dish" style="width: 80px; height: 80px; border-radius: 14px; object-fit: cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=700';">
+      <div>
+        <h3 id="modalTitle" style="font-size: 20px;">Dish Name</h3>
+        <p id="modalBasePrice" style="color: var(--accent); font-weight: 700; font-size: 15px;">Base: ₹0.00</p>
+      </div>
+    </div>
+    <p id="modalDesc" style="color: var(--text-muted); font-size: 13px; margin-bottom: 14px;"></p>
+
+    <!-- SPICE LEVEL SELECTION -->
+    <div class="custom-section" id="modalSpiceSection">
+      <h4>🌶️ Choose Spice Level</h4>
+      <div class="spice-pills" id="modalSpiceContainer"></div>
+    </div>
+
+    <!-- ADDONS & TOPPINGS -->
+    <div class="custom-section" id="modalAddonSection">
+      <h4>🧀 Add-ons & Extra Toppings</h4>
+      <div id="modalAddonContainer"></div>
+    </div>
+
+    <!-- SPECIAL CHEF INSTRUCTIONS -->
+    <div class="custom-section">
+      <h4>📝 Cooking Instructions / Dietary Notes</h4>
+      <input type="text" id="modalCustomNote" placeholder="e.g. No onions, less salt, extra napkins...">
+    </div>
+
+    <div style="margin-top: 24px;">
+      <button class="btn btn-accent" id="modalAddBtn" onclick="confirmModalAddToCart()" style="width: 100%; padding: 14px; font-size: 16px;">
+        Add to Order • ₹0.00
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}

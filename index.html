@@ -1,1 +1,85 @@
-{% extends "base.html" %}{% block content %}<section class="hero"><div><small>SMART CAMPUS CAFETERIA</small><h1>Order food.<br><span>Skip the queue.</span></h1><p>Digital menu • Custom orders • Scheduled pickup • Live tracking • Cashless payment</p><a class="btn" href="/menu">Explore Menu →</a></div><div class="heroCard">☕<h2>Fresh & Fast</h2><p>Order before reaching the cafeteria.</p></div></section>{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div>
+    <span class="hero-tag">⚡ Smart Campus Cafeteria</span>
+    <h1>Order fresh food.<br><span>Skip the long queues.</span></h1>
+    <p>Browse our digital menu, customize your favorite meals, pre-order for guaranteed pickup time slots, and track preparation status in real time.</p>
+    <div class="hero-cta">
+      <a class="btn btn-accent" href="/menu" style="padding: 14px 28px; font-size: 16px;">Browse Digital Menu →</a>
+      <a class="btn btn-outline" href="/history" style="padding: 14px 24px;">Track Past Orders</a>
+    </div>
+  </div>
+
+  <div class="hero-card">
+    <h3>Pre-Order & Pickup</h3>
+    <p>Select your exact lunch or break slot and have your meal steaming hot and ready when you arrive.</p>
+    <div class="hero-features">
+      <div class="hero-feature-item">🍔 <b>Custom Orders</b>: Add-ons, spice level & dietary notes</div>
+      <div class="hero-feature-item">⏰ <b>Scheduled Pickup</b>: Capacity-controlled time slots</div>
+      <div class="hero-feature-item">📡 <b>Live Tracking</b>: Push alerts when food is ready</div>
+      <div class="hero-feature-item">💳 <b>Cashless Payments</b>: UPI QR, Cards, Cafeteria Credits</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="steps-section">
+  <div class="section-heading">
+    <h2>How It Works</h2>
+    <p>4 simple steps to enjoy your meal without waiting in cafeteria lines</p>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-icon">📋</div>
+      <h4>1. Browse & Customize</h4>
+      <p>Explore daily specials and customize ingredients, spice level & extra toppings.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-icon">⏱️</div>
+      <h4>2. Pick Pickup Slot</h4>
+      <p>Choose your convenient pickup time to avoid the rush-hour queue.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-icon">📱</div>
+      <h4>3. Pay Cashless</h4>
+      <p>Instant contactless checkout via UPI QR, Cards, Wallets or Student Credits.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-icon">🔔</div>
+      <h4>4. Track & Collect</h4>
+      <p>Receive push alerts when your meal is packed and collect instantly at the counter.</p>
+    </div>
+  </div>
+</section>
+
+{% if specials %}
+<!-- TODAY'S CHEF SPECIALS -->
+<section style="margin-top: 40px;">
+  <div class="section-heading">
+    <h2>⭐ Today's Chef Specials</h2>
+    <p>Freshly prepared daily highlights selected by our head chef</p>
+  </div>
+  <div class="menu-grid">
+    {% for i in specials %}
+      <div class="food-card">
+        <div class="food-img-wrap">
+          <img src="{{ i.image_url }}" alt="{{ i.name }}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=700';">
+          <span class="food-badge special">⭐ Daily Special</span>
+        </div>
+        <div class="food-body">
+          <div class="food-category">{{ i.category }}</div>
+          <div class="food-title">{{ i.name }}</div>
+          <div class="food-desc">{{ i.description }}</div>
+          <div class="food-ingredients"><b>Ingredients:</b> {{ i.ingredients }}</div>
+          <div class="food-footer">
+            <div class="food-price">₹{{ i.price }}</div>
+            <a href="/menu?category=specials" class="btn btn-sm btn-warm">Order Special →</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

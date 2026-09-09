@@ -1,7 +1,34 @@
-MENU -> templates/menu.html -> app.py /api/menu -> menu_items table
-CART -> static/app.js + templates/cart.html -> browser Local Storage until checkout
-CHECKOUT -> templates/checkout.html -> app.py /checkout -> users, orders, order_items, pickup_slots, payments
-TRACKING -> templates/tracking.html -> orders table
-HISTORY -> templates/history.html -> users + orders
-ADMIN -> templates/admin.html -> app.py admin routes -> menu_items + orders
-PERMANENT DATA -> database.db (SQLite) in project root
+CAFEGO ARCHITECTURE MAP
+=============================================================================
+1. MENU & CUSTOMIZATIONS:
+   - Route: GET /menu, GET /api/menu
+   - Templates: index.html, menu.html
+   - Logic: app.js (openCustomModal, dynamic spice & add-on pricing engine)
+   - DB: menu_items (is_special, customization_options)
+
+2. CART & CLIENT STATE:
+   - Templates: cart.html
+   - Logic: app.js (getCart, saveCart, dynamic calculations, badge counter)
+   - Storage: Browser LocalStorage (key: "cafe_cart")
+
+3. PRE-ORDER & CHECKOUT:
+   - Route: GET/POST /checkout
+   - Templates: checkout.html
+   - DB: users, orders, order_items, pickup_slots, payments
+   - Features: Time slot capacity validation, Cashless UPI QR/Card/Wallet
+
+4. REAL-TIME TRACKING & NOTIFICATIONS:
+   - Route: GET /tracking/<id>, GET /api/orders/<id>
+   - Templates: tracking.html
+   - Logic: app.js (initLiveOrderTracking, Web Push Notification API, Audio Chime)
+
+5. RECEIPTS & ORDER HISTORY:
+   - Routes: GET /receipt/<id>, GET /history
+   - Templates: receipt.html, history.html
+   - Features: Printable GST invoice, QR pickup verification, email search
+
+6. ADMIN HUB & SALES ANALYTICS:
+   - Routes: GET/POST /admin/login, GET /admin, /admin/status/<id>, /admin/toggle/<id>, /admin/special/<id>, /admin/item/add, /admin/slot/add
+   - Templates: admin.html, admin_login.html
+   - Analytics: Total Revenue, AOV, Popular Items ranked, Peak Slot loads
+=============================================================================

@@ -1,1 +1,16 @@
-{% extends "base.html" %}{% block content %}<h1>Your Cart</h1><div id="cart"></div>{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<div class="card-header" style="margin-bottom: 24px;">
+  <div>
+    <h1>Your Cafeteria Cart</h1>
+    <p style="color: var(--text-muted); font-size: 15px;">Review selected meals, customize quantities, and proceed to pickup scheduling.</p>
+  </div>
+  <a href="/menu" class="btn btn-outline">← Back to Menu</a>
+</div>
+
+<div id="cartPageContainer">
+  <div class="card" style="text-align: center; padding: 40px;">
+    <p>Loading your cart...</p>
+  </div>
+</div>
+{% endblock %}

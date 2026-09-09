@@ -1,1 +1,387 @@
-{% extends "base.html" %}{% block content %}<h1>Admin Dashboard</h1><div class="stats"><b>Total Sales<br>₹{{sales}}</b><b>Orders<br>{{orders|length}}</b></div><div class="card"><h2>Menu Stock</h2>{% for i in items %}<div class="row"><span>{{i.name}} ₹{{i.price}} — {% if i.available %}Available{% else %}Out of stock{% endif %}</span><form method="post" action="/admin/toggle/{{i.item_id}}"><button>Toggle</button></form></div>{% endfor %}</div><div class="card"><h2>Orders</h2>{% for o in orders %}<div class="row"><span><b>#{{o.order_id}} {{o.name}}</b><br>₹{{o.total_amount}} • {{o.slot_time}}</span><form method="post" action="/admin/status/{{o.order_id}}"><select name="status">{% for s in ["Received","Preparing","Ready for Pickup","Completed","Cancelled"] %}<option {% if o.status==s %}selected{% endif %}>{{s}}</option>{% endfor %}</select><button>Update</button></form></div>{% endfor %}</div>{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<div class="card-header" style="margin-bottom: 24px;">
+  <div>
+    <h1>Cafeteria Admin Dashboard</h1>
+    <p style="color: var(--text-muted); font-size: 15px;">Live kitchen operations, sales intelligence, menu management & pickup slots.</p>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <a href="#add-item-modal" onclick="document.getElementById('addItemModal').classList.add('active')" class="btn btn-accent">
+      + Add New Dish
+    </a>
+    <a href="/admin/logout" class="btn btn-outline" style="color: var(--accent-red); border-color: #fee2e2;">
+      Logout 🚪
+    </a>
+  </div>
+</div>
+
+<!-- 1. KPI STATS CARDS -->
+<div class="admin-stats-grid">
+  <div class="stat-kpi-card">
+    <div class="kpi-icon" style="background: #ecfdf5; color: #10b981;">💰</div>
+    <div>
+      <div class="kpi-title">Total Revenue</div>
+      <div class="kpi-value">₹{{ total_sales }}</div>
+    </div>
+  </div>
+
+  <div class="stat-kpi-card">
+    <div class="kpi-icon" style="background: #eff6ff; color: #3b82f6;">📦</div>
+    <div>
+      <div class="kpi-title">Total Orders Placed</div>
+      <div class="kpi-value">{{ total_orders }}</div>
+    </div>
+  </div>
+
+  <div class="stat-kpi-card">
+    <div class="kpi-icon" style="background: #fef3c7; color: #f59e0b;">⏳</div>
+    <div>
+      <div class="kpi-title">Active In-Kitchen Queue</div>
+      <div class="kpi-value">{{ active_orders }}</div>
+    </div>
+  </div>
+
+  <div class="stat-kpi-card">
+    <div class="kpi-icon" style="background: #f3e8ff; color: #a855f7;">📊</div>
+    <div>
+      <div class="kpi-title">Avg Order Value (AOV)</div>
+      <div class="kpi-value">₹{{ avg_order_value }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. SALES REPORTS & POPULAR ITEMS & PEAK TIMES -->
+<div class="admin-columns">
+  
+  <!-- POPULAR ITEMS LEADERBOARD -->
+  <div class="card">
+    <div class="card-header">
+      <h3>🔥 Top Selling & Popular Dishes</h3>
+      <span style="font-size: 12px; color: var(--text-muted);">By Volume</span>
+    </div>
+    {% if popular_items %}
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Dish Name</th>
+            <th>Category</th>
+            <th style="text-align: center;">Qty Sold</th>
+            <th style="text-align: right;">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in popular_items %}
+            <tr>
+              <td><b>{{ p.name }}</b></td>
+              <td><span style="font-size: 12px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">{{ p.category }}</span></td>
+              <td style="text-align: center; font-weight: 700;">{{ p.total_qty }}</td>
+              <td style="text-align: right; font-weight: 700; color: var(--accent);">₹{{ p.total_revenue|round(2) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p style="color: var(--text-muted); text-align: center; padding: 20px;">No sales data yet to calculate popular items.</p>
+    {% endif %}
+  </div>
+
+  <!-- PEAK ORDERING TIMES BY SLOT -->
+  <div class="card">
+    <div class="card-header">
+      <h3>⏰ Peak Ordering Times & Slots</h3>
+      <span style="font-size: 12px; color: var(--text-muted);">Slot Distribution</span>
+    </div>
+    {% if peak_times %}
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Time Slot</th>
+            <th>Capacity</th>
+            <th>Booked</th>
+            <th style="text-align: right;">Load Meter</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pt in peak_times %}
+            {% set pct = (pt.booked / pt.capacity * 100)|round|int if pt.capacity > 0 else 0 %}
+            <tr>
+              <td><b>{{ pt.slot_time }}</b></td>
+              <td>{{ pt.capacity }} slots</td>
+              <td><b>{{ pt.booked }}</b> orders</td>
+              <td style="text-align: right; width: 120px;">
+                <div style="background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; width: 100%;">
+                  <div style="background: {% if pct >= 80 %}#ef4444{% elif pct >= 50 %}#f59e0b{% else %}#10b981{% endif %}; height: 100%; width: {{ pct }}%;"></div>
+                </div>
+                <small style="font-size: 11px; color: var(--text-muted);">{{ pct }}% Full</small>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p style="color: var(--text-muted); text-align: center; padding: 20px;">No slot data available.</p>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- 3. LIVE ORDERS MANAGEMENT -->
+<div class="card" id="orders-section">
+  <div class="card-header">
+    <div>
+      <h3>Live Kitchen Orders & Status Pipeline</h3>
+      <p style="color: var(--text-muted); font-size: 13px;">Manage real-time order states (Received ➔ Preparing ➔ Ready for Pickup ➔ Completed)</p>
+    </div>
+    <span style="font-weight: 700; font-size: 14px; background: #f1f5f9; padding: 4px 12px; border-radius: var(--radius-full);">
+      {{ orders_data|length }} Orders
+    </span>
+  </div>
+
+  {% if orders_data %}
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      {% for entry in orders_data %}
+        {% set o = entry.order %}
+        {% set o_items = entry.order_items %}
+        <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+            <div>
+              <span style="font-size: 17px; font-weight: 800; color: var(--primary);">Order #{{ o.order_id }}</span>
+              <span style="margin-left: 8px; font-weight: 600;">{{ o.name }} ({{ o.email }})</span>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                Scheduled Pickup: <b style="color: var(--accent);">{{ o.slot_time }}</b> • Placed: {{ o.created_at }} • Paid via <b>{{ o.method }}</b>
+              </div>
+            </div>
+
+            <!-- STATUS UPDATER FORM -->
+            <form method="post" action="/admin/status/{{ o.order_id }}" style="display: flex; gap: 8px; align-items: center;">
+              <select name="status" style="width: auto; margin: 0; padding: 8px 12px; font-weight: 600; font-size: 13px;">
+                {% for s in ["Received", "Preparing", "Ready for Pickup", "Completed", "Cancelled"] %}
+                  <option value="{{ s }}" {% if o.status == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-accent btn-sm">Update State</button>
+            </form>
+          </div>
+
+          <!-- ITEMS & CUSTOM INSTRUCTIONS -->
+          <div style="font-size: 13px;">
+            <b>Items Ordered:</b>
+            <div style="margin-top: 4px; display: grid; gap: 4px;">
+              {% for it in o_items %}
+                <div style="background: white; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); display: flex; justify-content: space-between;">
+                  <span>
+                    <b>{{ it.quantity }}× {{ it.name }}</b>
+                    {% if it.spice_level %}<span style="color: #ef4444; font-weight: 600;">(🌶️ {{ it.spice_level }})</span>{% endif %}
+                    {% if it.addons_selected %}<span style="color: var(--accent); font-weight: 600;">+ {{ it.addons_selected }}</span>{% endif %}
+                    {% if it.customization %}<span style="font-style: italic; color: #64748b;">— "{{ it.customization }}"</span>{% endif %}
+                  </span>
+                  <b>₹{{ it.subtotal }}</b>
+                </div>
+              {% endfor %}
+            </div>
+
+            {% if o.special_instructions %}
+              <div style="margin-top: 8px; background: #fef3c7; color: #92400e; padding: 6px 10px; border-radius: 6px; font-size: 12px;">
+                <b>Special Instructions:</b> {{ o.special_instructions }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color: var(--text-muted); text-align: center; padding: 30px;">No incoming orders yet.</p>
+  {% endif %}
+</div>
+
+<!-- 4. MENU ITEMS MANAGEMENT -->
+<div class="card" id="menu-section">
+  <div class="card-header">
+    <div>
+      <h3>Menu Items & Stock Availability</h3>
+      <p style="color: var(--text-muted); font-size: 13px;">Manage dish pricing, stock availability, daily specials, and custom add-ons</p>
+    </div>
+    <button onclick="document.getElementById('addItemModal').classList.add('active')" class="btn btn-accent btn-sm">
+      + Add New Dish
+    </button>
+  </div>
+
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Dish / Image</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Daily Special</th>
+        <th>Stock Status</th>
+        <th style="text-align: right;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <img src="{{ item.image_url }}" alt="{{ item.name }}" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover;" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=700';">
+              <div>
+                <b>{{ item.name }}</b>
+                <div style="font-size: 12px; color: var(--text-muted); max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ item.ingredients }}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>{{ item.category }}</td>
+          <td><b>₹{{ item.price }}</b></td>
+          <td>
+            <form method="post" action="/admin/special/{{ item.item_id }}" style="display: inline;">
+              <button type="submit" class="btn btn-sm {% if item.is_special %}btn-warm{% else %}btn-outline{% endif %}">
+                {% if item.is_special %}⭐ Daily Special{% else %}☆ Regular{% endif %}
+              </button>
+            </form>
+          </td>
+          <td>
+            <form method="post" action="/admin/toggle/{{ item.item_id }}" style="display: inline;">
+              <button type="submit" class="btn btn-sm {% if item.available %}btn-accent{% else %}btn-danger{% endif %}">
+                {% if item.available %}In Stock ✓{% else %}Sold Out ✕{% endif %}
+              </button>
+            </form>
+          </td>
+          <td style="text-align: right;">
+            <form method="post" action="/admin/item/delete/{{ item.item_id }}" style="display: inline;" onsubmit="return confirm('Delete this menu item?');">
+              <button type="submit" class="btn btn-outline btn-sm" style="color: var(--accent-red); border-color: #fee2e2;">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- 5. PICKUP SLOTS MANAGEMENT -->
+<div class="card" id="slots-section">
+  <div class="card-header">
+    <div>
+      <h3>Pickup Time Slots & Capacity Management</h3>
+      <p style="color: var(--text-muted); font-size: 13px;">Manage pre-order pickup slots and reset booking counters</p>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <div>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Slot Time</th>
+            <th>Capacity</th>
+            <th>Booked</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in slots %}
+            <tr>
+              <td><b>{{ s.slot_time }}</b></td>
+              <td>{{ s.capacity }} orders max</td>
+              <td><b style="color: var(--accent);">{{ s.booked }}</b> booked</td>
+              <td style="text-align: right;">
+                <form method="post" action="/admin/slot/reset/{{ s.slot_id }}" style="display: inline;">
+                  <button type="submit" class="btn btn-outline btn-sm">Reset Bookings</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ADD NEW SLOT FORM -->
+    <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px;">
+      <h4 style="margin-bottom: 12px;">Add New Pickup Slot</h4>
+      <form method="post" action="/admin/slot/add">
+        <label style="font-size: 13px; font-weight: 600;">Time Label</label>
+        <input type="text" name="slot_time" placeholder="e.g. 06:30 PM" required>
+
+        <label style="font-size: 13px; font-weight: 600; margin-top: 10px; display: block;">Slot Capacity (Max Orders)</label>
+        <input type="number" name="capacity" value="15" min="1" required>
+
+        <button type="submit" class="btn btn-accent btn-sm" style="width: 100%; margin-top: 14px;">Add Slot</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD NEW MENU DISH -->
+<div class="modal-backdrop" id="addItemModal">
+  <div class="modal-content" style="max-width: 600px;">
+    <button class="modal-close" onclick="document.getElementById('addItemModal').classList.remove('active')">✕</button>
+    <h3 style="font-size: 22px; margin-bottom: 16px;">Add New Menu Dish</h3>
+    
+    <form method="post" action="/admin/item/add">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label style="font-size: 13px; font-weight: 600;">Dish Name *</label>
+          <input type="text" name="name" placeholder="e.g. Gourmet Veg Wrap" required>
+        </div>
+        <div>
+          <label style="font-size: 13px; font-weight: 600;">Category *</label>
+          <select name="category" required>
+            <option>Fast Food</option>
+            <option>Snacks</option>
+            <option>Beverages</option>
+            <option>Healthy Bowls</option>
+            <option>Desserts</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
+        <div>
+          <label style="font-size: 13px; font-weight: 600;">Base Price (₹) *</label>
+          <input type="number" name="price" step="0.5" placeholder="e.g. 75" required>
+        </div>
+        <div>
+          <label style="font-size: 13px; font-weight: 600;">Image URL</label>
+          <input type="text" name="image_url" placeholder="https://images.unsplash.com/...">
+        </div>
+      </div>
+
+      <div style="margin-top: 10px;">
+        <label style="font-size: 13px; font-weight: 600;">Description</label>
+        <input type="text" name="description" placeholder="Brief delicious description...">
+      </div>
+
+      <div style="margin-top: 10px;">
+        <label style="font-size: 13px; font-weight: 600;">Ingredients List</label>
+        <input type="text" name="ingredients" placeholder="e.g. Whole wheat wrap, paneer, veggies, mint chutney">
+      </div>
+
+      <!-- ADD-ONS MODIFIER INPUT -->
+      <div style="margin-top: 10px;">
+        <label style="font-size: 13px; font-weight: 600;">Custom Add-ons (One per line in format: Name:Price)</label>
+        <textarea name="addons_raw" rows="3" placeholder="Extra Cheese:20&#10;Double Patty:35&#10;Extra Dip:15"></textarea>
+      </div>
+
+      <!-- SPICE LEVELS CHECKBOXES -->
+      <div style="margin-top: 10px;">
+        <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">Spice Level Options</label>
+        <div style="display: flex; gap: 12px; font-size: 13px;">
+          <label><input type="checkbox" name="spice_options" value="Mild" checked> Mild</label>
+          <label><input type="checkbox" name="spice_options" value="Medium 🌶️" checked> Medium 🌶️</label>
+          <label><input type="checkbox" name="spice_options" value="Fiery Spicy 🌶️🌶️" checked> Fiery Spicy 🌶️🌶️</label>
+        </div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600;">
+          <input type="checkbox" name="is_special"> Mark as ⭐ Daily Chef Special
+        </label>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <button type="submit" class="btn btn-accent" style="width: 100%; padding: 12px;">Add Dish to Menu</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

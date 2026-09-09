@@ -1,1 +1,122 @@
-{% extends "base.html" %}{% block content %}<h1>Checkout</h1><form class="card" method="post"><label>Name<input name="name" required></label><label>Email<input type="email" name="email" required></label><label>Pickup Time<select name="slot_id">{% for s in slots %}<option value="{{s.slot_id}}">{{s.slot_time}} ({{s.capacity-s.booked}} left)</option>{% endfor %}</select></label><label>Payment<select name="payment_method"><option>UPI</option><option>Card</option><option>Wallet</option><option>Cafeteria Credit</option></select></label><div id="summary"></div><button class="btn">Place Order & Pay</button></form>{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+<div class="card-header" style="margin-bottom: 24px;">
+  <div>
+    <h1>Pre-Order & Checkout</h1>
+    <p style="color: var(--text-muted); font-size: 15px;">Choose your scheduled pickup time slot and complete cashless payment.</p>
+  </div>
+  <a href="/cart" class="btn btn-outline">← Back to Cart</a>
+</div>
+
+<form id="checkoutOrderForm" method="post" action="/checkout">
+  <div class="cart-layout">
+    <!-- LEFT COLUMN: CUSTOMER DETAILS & PICKUP SLOTS & PAYMENT -->
+    <div>
+      <!-- 1. CUSTOMER INFO -->
+      <div class="card">
+        <h3 style="margin-bottom: 16px;">1. Customer Details</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <label style="font-weight: 600; font-size: 13px;">Full Name *</label>
+            <input type="text" name="name" placeholder="e.g. Rohit Das" required>
+          </div>
+          <div>
+            <label style="font-weight: 600; font-size: 13px;">Email Address (for Receipt) *</label>
+            <input type="email" name="email" placeholder="e.g. rohit@campus.edu" required>
+          </div>
+        </div>
+        <div style="margin-top: 12px;">
+          <label style="font-weight: 600; font-size: 13px;">Phone Number (Optional for SMS Alerts)</label>
+          <input type="tel" name="phone" placeholder="e.g. +91 98765 43210">
+        </div>
+      </div>
+
+      <!-- 2. PICKUP TIME SLOT -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h3>2. Scheduled Pickup Time Slot ⏱️</h3>
+          <span style="font-size: 12px; color: var(--accent); font-weight: 700;">Guaranteed Queue-Free Slot</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 14px;">Select when you will arrive at the cafeteria counter to collect your order:</p>
+        
+        <div class="slots-grid">
+          {% for s in slots %}
+            <label>
+              <input type="radio" name="slot_id" value="{{ s.slot_id }}" class="slot-radio" {% if loop.first %}checked{% endif %} required>
+              <div class="slot-label">
+                <span class="time">{{ s.slot_time }}</span>
+                <span class="avail">{{ s.capacity - s.booked }} spots left</span>
+              </div>
+            </label>
+          {% else %}
+            <div style="grid-column: 1 / -1; color: var(--accent-red); font-weight: 600;">
+              No pickup slots available currently. Please check back later.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- 3. CASHLESS PAYMENT -->
+      <div class="card">
+        <h3>3. Cashless Payment Method 💳</h3>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 14px;">Select your preferred payment channel for immediate checkout:</p>
+        
+        <div class="payment-tabs">
+          <label>
+            <input type="radio" name="payment_method" value="UPI" class="payment-radio" checked>
+            <div class="payment-tab">
+              <span style="font-size: 20px;">📱</span>
+              <span>UPI / QR</span>
+            </div>
+          </label>
+          <label>
+            <input type="radio" name="payment_method" value="Card" class="payment-radio">
+            <div class="payment-tab">
+              <span style="font-size: 20px;">💳</span>
+              <span>Debit / Card</span>
+            </div>
+          </label>
+          <label>
+            <input type="radio" name="payment_method" value="Wallet" class="payment-radio">
+            <div class="payment-tab">
+              <span style="font-size: 20px;">👛</span>
+              <span>Wallets</span>
+            </div>
+          </label>
+          <label>
+            <input type="radio" name="payment_method" value="Cafeteria Credit" class="payment-radio">
+            <div class="payment-tab">
+              <span style="font-size: 20px;">🎓</span>
+              <span>Campus ID</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- DYNAMIC PAYMENT DETAILS PREVIEW -->
+        <div id="paymentDynamicDetails" class="payment-details-box"></div>
+
+        <div style="margin-top: 14px;">
+          <label style="font-weight: 600; font-size: 13px;">Special Instructions for Kitchen (Optional)</label>
+          <input type="text" name="special_instructions" placeholder="e.g. Please pack separately, extra cutlery...">
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: ORDER SUMMARY -->
+    <div>
+      <div class="order-summary-box">
+        <h3 style="margin-bottom: 16px;">Items in Your Order</h3>
+        <div id="checkoutSummary">
+          <p>Calculating order total...</p>
+        </div>
+        <button type="submit" class="btn btn-accent" style="width: 100%; margin-top: 20px; padding: 14px; font-size: 16px;">
+          Confirm & Pay Now 🔒
+        </button>
+        <p style="text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 10px;">
+          ✓ SSL Encrypted • Instant Kitchen Queue Booking
+        </p>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
